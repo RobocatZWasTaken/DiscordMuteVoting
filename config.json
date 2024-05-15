@@ -1,0 +1,6 @@
+{
+  "prefix": "!",
+  "token": "YOUR_DISCORD_BOT_TOKEN",
+  "allowedRole": "YOUR_ALLOWED_ROLE_NAME",
+  "mutedRole": "Muted"
+}

@@ -1,61 +1,69 @@
-const Discord = require('discord.js');
-const client = new Discord.Client();
-const { prefix, token, allowedRole, mutedRole } = require('./config.json');
+const { CommandoClient } = require('discord.js-commando');
+const path = require('path');
+const { token, prefix, allowedRole, mutedRole } = require('./config.json');
+
+const client = new CommandoClient({
+    commandPrefix: prefix,
+    owner: 'your_owner_id_here', // Replace 'your_owner_id_here' with your Discord user ID
+});
+
+client.registry
+    .registerDefaultTypes()
+    .registerDefaultGroups()
+    .registerDefaultCommands()
+    .registerGroup('moderation', 'Moderation')
+    .registerCommand(MuteCommand);
 
 client.once('ready', () => {
     console.log('Bot is ready!');
 });
 
-client.on('message', async message => {
-    if (!message.content.startsWith(prefix) || message.author.bot) return;
+client.on('error', console.error);
 
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
+client.login(token);
 
-    if command === 'mute') {
-        // Check if user has the allowed role
-        if (!message.member.roles.cache.some(role => role.name === allowedRole)) {
-            return message.reply('You do not have permission to use this command.');
-        }
+const { Command } = require('discord.js-commando');
 
-        // Get the mentioned user
-        const member = message.mentions.members.first();
-        if (!member) {
-            return message.reply('You need to mention a user to perform this action on.');
-        }
+class MuteCommand extends Command {
+    constructor(client) {
+        super(client, {
+            name: 'mute',
+            group: 'moderation',
+            memberName: 'mute',
+            description: 'Mutes a user.',
+            userPermissions: ['MANAGE_ROLES'],
+            args: [
+                {
+                    key: 'member',
+                    prompt: 'Which member do you want to mute?',
+                    type: 'member',
+                },
+            ],
+        });
+    }
 
-        // Create a vote message
-        const voteMessage = await message.channel.send(`Vote to ${command} ${member.displayName}. React with ✅ to ${command} or ❌ to cancel.`);
+    async run(message, { member }) {
+        const voteMessage = await message.channel.send(`Vote to mute ${member.displayName}. React with ✅ to mute or ❌ to cancel.`);
 
-        // Add reaction options
         await voteMessage.react('✅');
         await voteMessage.react('❌');
 
-        // Create a filter to collect reactions
-        const filter = (reaction, user) => ['✅', '❌'].includes(reaction.emoji.name) && user.id !== client.user.id;
-
-        // Collect reactions
+        const filter = (reaction, user) => ['✅', '❌'].includes(reaction.emoji.name) && user.id !== this.client.user.id;
         const collected = await voteMessage.awaitReactions(filter, { time: 60000 });
-
-        // Calculate votes
-        const votesFor = collected.get('✅') ? collected.get('✅').count - 1 : 0; // Subtract 1 to exclude the bot's reaction
+        const votesFor = collected.get('✅') ? collected.get('✅').count - 1 : 0;
         const votesAgainst = collected.get('❌') ? collected.get('❌').count - 1 : 0;
 
-        // Check if the action should be carried out
         if (votesFor > votesAgainst) {
-           if (command === 'mute') {
-                // Assign Muted role
-                const mutedRoleObj = message.guild.roles.cache.find(role => role.name === mutedRole);
-                if (!mutedRoleObj) {
-                    return message.channel.send('Muted role not found. Please ask a mod to create a role named "Muted" with appropriate permissions.');
-                }
-                await member.roles.add(mutedRoleObj);
-                message.channel.send(`${member.displayName} has been muted.`);
+            const mutedRoleObj = message.guild.roles.cache.find((role) => role.name === mutedRole);
+            if (!mutedRoleObj) {
+                return message.channel.send('Muted role not found. Please ask a mod to create a role named "Muted" with appropriate permissions.');
             }
+            await member.roles.add(mutedRoleObj);
+            message.channel.send(`${member.displayName} has been muted.`);
         } else {
-            message.channel.send(`${member.displayName} will not be ${command}ed.`);
+            message.channel.send(`${member.displayName} will not be muted.`);
         }
     }
-});
+}
 
-client.login(token);  
+//Changed By S4vvyos: https://github.com/tubers93os

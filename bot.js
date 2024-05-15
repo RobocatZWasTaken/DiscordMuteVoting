@@ -12,7 +12,7 @@ client.on('message', async message => {
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
-    if (command === 'kick' || command === 'ban' || command === 'mute') {
+    if command === 'mute') {
         // Check if user has the allowed role
         if (!message.member.roles.cache.some(role => role.name === allowedRole)) {
             return message.reply('You do not have permission to use this command.');
@@ -43,17 +43,11 @@ client.on('message', async message => {
 
         // Check if the action should be carried out
         if (votesFor > votesAgainst) {
-            if (command === 'kick') {
-                await member.kick();
-                message.channel.send(`${member.displayName} has been kicked.`);
-            } else if (command === 'ban') {
-                await member.ban();
-                message.channel.send(`${member.displayName} has been banned.`);
-            } else if (command === 'mute') {
+           if (command === 'mute') {
                 // Assign Muted role
                 const mutedRoleObj = message.guild.roles.cache.find(role => role.name === mutedRole);
                 if (!mutedRoleObj) {
-                    return message.channel.send('Muted role not found. Please create a role named "Muted" with appropriate permissions.');
+                    return message.channel.send('Muted role not found. Please ask a mod to create a role named "Muted" with appropriate permissions.');
                 }
                 await member.roles.add(mutedRoleObj);
                 message.channel.send(`${member.displayName} has been muted.`);
